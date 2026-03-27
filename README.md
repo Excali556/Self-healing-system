@@ -90,10 +90,10 @@ The system is composed of four core layers:
 
 ---
 
+![Self-healing-system API Demo](assets/demo.png)
+
 ### ⚙️ Setup
 
 ```bash
 git clone https://github.com/your-username/self-healing-system.git
 cd self-healing-system
-
-![Self-healing-system API Demo](assets/demo.png)
