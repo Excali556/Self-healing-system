@@ -6,7 +6,6 @@ client = docker.from_env()
 
 while True:
     time.sleep(10)
-    # Find all containers that belong to our "app" service
     all_apps = client.containers.list(filters={"name": "app"})
     
     if all_apps:

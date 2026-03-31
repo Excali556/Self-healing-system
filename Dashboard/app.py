@@ -3,10 +3,7 @@ import docker
 import time
 import pandas as pd
 
-# 1. PAGE CONFIG & CUSTOM CSS
 st.set_page_config(page_title="Nexus Chaos Control", layout="wide", initial_sidebar_state="collapsed")
-
-# Injecting Custom CSS for a Dark Mode / Cyberpunk feel
 st.markdown("""
     <style>
     .main { background-color: #0e1117; }
@@ -26,16 +23,10 @@ st.markdown("""
 
 st.title("⚡ NEXUS: CLUSTER RESILIENCE")
 st.write("---")
-
 client = docker.from_env()
-
-# 2. STATE INITIALIZATION
 if 'history' not in st.session_state:
     st.session_state.history = []
-
 placeholder = st.empty()
-
-# 3. LIVE UPDATE LOOP
 while True:
     try:
         containers = client.containers.list(all=True, filters={"name": "app"})
@@ -46,22 +37,18 @@ while True:
         health_pct = (running_count / total_count * 100) if total_count > 0 else 0
 
         with placeholder.container():
-            # TOP ROW: Global Stats
             m1, m2, m3 = st.columns(3)
             m1.metric("CLUSTER UPTIME", f"{health_pct:.0f}%", delta="SYSTEM STABLE" if health_pct > 70 else "CRITICAL")
             m2.metric("ACTIVE NODES", f"{running_count}/{total_count}")
             m3.metric("LATENCY SCAN", "12ms", delta="-2ms")
 
             st.write("### 🛰️ NODE REPOSITORY")
-            
-            # NODE GRID: Dynamic columns based on number of apps
             cols = st.columns(max(total_count, 1))
             for idx, container in enumerate(containers):
                 is_up = container.status == "running"
                 status_color = "#00ffcc" if is_up else "#ff4b4b"
                 
                 with cols[idx]:
-                    # Custom HTML Card for each node
                     st.markdown(f"""
                         <div style="background: rgba(255,255,255,0.03); border-radius: 10px; padding: 15px; border-top: 4px solid {status_color}; text-align: center;">
                             <p style="margin:0; font-size: 12px; color: #888;">NODE ID</p>
@@ -69,8 +56,6 @@ while True:
                             <p style="margin-top: 10px; font-size: 18px; color: {status_color};">{container.status.upper()}</p>
                         </div>
                     """, unsafe_allow_html=True)
-
-            # HISTORY CHART: Dark theme area chart
             st.write("---")
             st.write("### 📈 STRESS METRICS")
             st.session_state.history.append({

@@ -1,9 +1,13 @@
-FROM python:3.10
+FROM python:3.10-slim
 
-RUN apt-get update && apt-get install -y docker.io
+WORKDIR /app
 
-WORKDIR /recovery
+# Copy requirements first (for caching)
+COPY requirements.txt .
 
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy rest of code
 COPY . .
 
 CMD ["python", "healer.py"]

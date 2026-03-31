@@ -1,2 +1,5 @@
-fastapi
+flask
+requests
+ansible-runner
 uvicorn
+fastapi

@@ -1,0 +1,45 @@
+---
+- name: Smart Self-Healing Repairs
+  hosts: all
+  become: yes
+  tasks:
+
+    #SERVICE RESTART LOGIC
+    - name: Check if the service is actually down
+      ansible.builtin.systemd:
+        name: "{{ service_name }}"
+      register: service_status
+      when: repair_action == "restart_service"
+
+    - name: Restart service ONLY if not running
+      ansible.builtin.service:
+        name: "{{ service_name }}"
+        state: restarted
+      # Only runs if the service state is NOT 'started'
+      when: 
+        - repair_action == "restart_service"
+        - service_status.status.ActiveState != "active"
+
+    #DISK SPACE LOGIc
+    - name: Check current disk usage of /var/log
+      shell: df /var/log | tail -1 | awk '{print $5}' | sed 's/%//'
+      register: disk_pcent
+      when: repair_action == "clear_logs"
+
+    - name: Clear logs ONLY if disk usage is above 80%
+      command: journalctl --vacuum-time=1d
+      when: 
+        - repair_action == "clear_logs"
+        - disk_pcent.stdout | int > 80
+
+    #MEMORY LOGIC
+    - name: Check free memory (MB)
+      shell: free -m | grep Mem | awk '{print $4}'
+      register: free_mem
+      when: repair_action == "flush_ram"
+
+    - name: Flush RAM ONLY if free memory is less than 500MB
+      shell: sync; echo 3 > /proc/sys/vm/drop_caches
+      when: 
+        - repair_action == "flush_ram"
+        - free_mem.stdout | int < 500

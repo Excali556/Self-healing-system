@@ -1,0 +1,16 @@
+---
+- name: Self-Healing Service Recovery
+  hosts: all
+  become: yes
+  tasks:
+    - name: Ensure Nginx is running
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: yes
+    
+    - name: Log the healing action
+      ansible.builtin.lineinfile:
+        path: /var/log/self_healing.log
+        line: "Service restarted by AI Healer at {{ ansible_date_time.iso8601 }}"
+        create: yes

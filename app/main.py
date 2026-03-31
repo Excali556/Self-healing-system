@@ -9,7 +9,4 @@ def home():
 
 @app.get("/health")
 def health():
-    # simulate random failure
-    if random.randint(1, 10) > 8:
-        raise Exception("Random failure")
     return {"status": "healthy"}

@@ -2,39 +2,55 @@ services:
   app:
     build: ./app
     ports:
-      - "8000-8002:8000"
+      - "8000:8000" # Simplified to a single port for testing
     restart: always
-
+    networks:
+      - self-healing-network
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      # This uses standard python to check if the app is listening
+      test: [ "CMD-SHELL", "python -c 'import socket; s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.connect((\"localhost\", 8000)); print(\"OK\")' || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 3
-      start_period: 5s
+      start_period: 10s # Give it extra time to start up
 
   chaos:
     build: ./chaos
     container_name: chaos
+    networks:
+      - self-healing-network
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
-      - app
+      app:
+        condition: service_healthy
 
-  healer:
+  recovery:
     build: ./recovery
-    container_name: healer
-    volumes:
-
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+    container_name: recovery
+    ports:
+      - "5050:5000" # Use 5050 on your PC
+    networks:
+      - self-healing-network
     depends_on:
-      - app
+      app:
+        condition: service_healthy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 
   dashboard:
     build: ./dashboard
     container_name: dashboard
     ports:
       - "8501:8501"
+    networks:
+      - self-healing-network
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     depends_on:
-      - app
+      app:
+        condition: service_healthy
+
+networks:
+  self-healing-network:
+    driver: bridge
