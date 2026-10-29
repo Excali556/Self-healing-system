@@ -95,5 +95,5 @@ The system is composed of four core layers:
 ### ⚙️ Setup
 
 ```bash
-git clone https://github.com/your-username/self-healing-system.git
+git clone https://github.com/Excali556/self-healing-system.git
 cd self-healing-system
