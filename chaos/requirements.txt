@@ -1,5 +1,2 @@
-flask
-requests
-ansible-runner
-uvicorn
-fastapi
+docker>=7.0.0
+requests>=2.31.0

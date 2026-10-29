@@ -1,56 +1,109 @@
 services:
   app:
     build: ./app
+    container_name: nexus-app
     ports:
-      - "8000:8000" # Simplified to a single port for testing
-    restart: always
+      - "8000:8000"
+    restart: unless-stopped
     networks:
-      - self-healing-network
+      - nexus-network
+    environment:
+      - INSTANCE_ID=nexus-worker-primary
     healthcheck:
-      # This uses standard python to check if the app is listening
-      test: [ "CMD-SHELL", "python -c 'import socket; s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.connect((\"localhost\", 8000)); print(\"OK\")' || exit 1" ]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s # Give it extra time to start up
-
-  chaos:
-    build: ./chaos
-    container_name: chaos
-    networks:
-      - self-healing-network
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    depends_on:
-      app:
-        condition: service_healthy
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8000/health\")' || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 2
+      start_period: 5s
 
   recovery:
     build: ./recovery
-    container_name: recovery
+    container_name: nexus-healer
     ports:
-      - "5050:5000" # Use 5050 on your PC
+      - "5050:5050"
+    restart: unless-stopped
     networks:
-      - self-healing-network
+      - nexus-network
+    environment:
+      - PROMETHEUS_URL=http://prometheus:9090
+      - APP_TARGETS=http://app:8000
+      - CHECK_INTERVAL_SECONDS=2.0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       app:
         condition: service_healthy
+
+  chaos:
+    build: ./chaos
+    container_name: nexus-chaos
+    restart: unless-stopped
+    networks:
+      - nexus-network
+    environment:
+      - APP_TARGET_URL=http://app:8000
+      - CHAOS_INTERVAL=20.0
+      - CHAOS_ENABLED=true
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      recovery:
+        condition: service_started
+
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: nexus-prometheus
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    networks:
+      - nexus-network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: nexus-grafana
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    networks:
+      - nexus-network
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/etc/grafana/dashboards:ro
+    depends_on:
+      - prometheus
 
   dashboard:
-    build: ./dashboard
-    container_name: dashboard
+    build: ./Dashboard
+    container_name: nexus-dashboard
     ports:
       - "8501:8501"
+    restart: unless-stopped
     networks:
-      - self-healing-network
+      - nexus-network
+    environment:
+      - HEALER_API_URL=http://recovery:5050
+      - APP_TARGET_URL=http://app:8000
+      - PROMETHEUS_URL=http://prometheus:9090
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     depends_on:
-      app:
-        condition: service_healthy
+      - recovery
 
 networks:
-  self-healing-network:
+  nexus-network:
     driver: bridge

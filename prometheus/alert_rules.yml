@@ -1,0 +1,32 @@
+groups:
+  - name: nexus_resilience_alerts
+    rules:
+      - alert: NexusInstanceDown
+        expr: up{job="nexus-app"} == 0
+        for: 4s
+        labels:
+          severity: critical
+          team: sre-resilience
+        annotations:
+          summary: "Nexus Victim Instance Down"
+          description: "Instance {{ $labels.instance }} has been unreachable for more than 4 seconds."
+
+      - alert: NexusHighErrorRate
+        expr: (sum(rate(nexus_http_requests_total{status=~"5.."}[30s])) / sum(rate(nexus_http_requests_total[30s]))) > 0.15
+        for: 4s
+        labels:
+          severity: critical
+          team: sre-resilience
+        annotations:
+          summary: "Nexus 5xx Error Rate Spike Detected"
+          description: "Error rate is above 15% (current: {{ $value | humanizePercentage }})."
+
+      - alert: NexusLatencyDegraded
+        expr: histogram_quantile(0.95, sum(rate(nexus_http_request_duration_seconds_bucket[30s])) by (le)) > 0.50
+        for: 6s
+        labels:
+          severity: warning
+          team: sre-resilience
+        annotations:
+          summary: "Nexus p95 Latency SLA Breached"
+          description: "p95 response latency exceeded 500ms threshold (current: {{ $value }}s)."

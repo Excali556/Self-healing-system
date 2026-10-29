@@ -1,0 +1,56 @@
+{
+  "agent": {
+    "metrics_collection_interval": 10,
+    "run_as_user": "root"
+  },
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/var/log/nexus_incidents.log",
+            "log_group_name": "/nexus/resilience/incidents",
+            "log_stream_name": "{instance_id}-incidents",
+            "timezone": "UTC"
+          },
+          {
+            "file_path": "/var/lib/docker/containers/*/*-json.log",
+            "log_group_name": "/nexus/resilience/docker-containers",
+            "log_stream_name": "{instance_id}-containers",
+            "timezone": "UTC"
+          }
+        ]
+      }
+    }
+  },
+  "metrics": {
+    "namespace": "Nexus/Resilience",
+    "metrics_collected": {
+      "mem": {
+        "measurement": [
+          "mem_used_percent"
+        ],
+        "metrics_collection_interval": 10
+      },
+      "cpu": {
+        "measurement": [
+          "cpu_usage_idle",
+          "cpu_usage_iowait",
+          "cpu_usage_system",
+          "cpu_usage_user"
+        ],
+        "totalcpu": true,
+        "metrics_collection_interval": 10
+      },
+      "disk": {
+        "measurement": [
+          "used_percent"
+        ],
+        "resources": [
+          "*"
+        ],
+        "metrics_collection_interval": 60
+      }
+    }
+  }
+}

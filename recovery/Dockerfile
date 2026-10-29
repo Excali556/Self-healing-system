@@ -2,12 +2,13 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# Copy requirements first (for caching)
-COPY requirements.txt .
+ENV PYTHONUNBUFFERED=1
 
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy rest of code
 COPY . .
+
+EXPOSE 5050
 
 CMD ["python", "healer.py"]

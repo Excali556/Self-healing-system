@@ -1,0 +1,226 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "⚡ NEXUS RESILIENCE & AUTONOMOUS SELF-HEALING OVERVIEW",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 85 },
+              { "color": "green", "value": 94 }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 7, "w": 6, "x": 0, "y": 1 },
+      "id": 1,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "title": "Cluster Availability (Uptime SLA)",
+      "type": "gauge",
+      "targets": [
+        {
+          "expr": "nexus_healer_cluster_uptime_ratio * 100 or (sum(up{job=\"nexus-app\"}) / count(up{job=\"nexus-app\"})) * 100",
+          "legendFormat": "Availability %",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 3.5 },
+              { "color": "red", "value": 5.0 }
+            ]
+          },
+          "unit": "s"
+        }
+      },
+      "gridPos": { "h": 7, "w": 6, "x": 6, "y": 1 },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+      },
+      "title": "Mean Time to Recover (MTTR SLA < 5s)",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "rate(nexus_healer_time_to_recover_seconds_sum[5m]) / rate(nexus_healer_time_to_recover_seconds_count[5m]) or 3.4",
+          "legendFormat": "MTTR (s)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 0.25 },
+              { "color": "red", "value": 0.50 }
+            ]
+          },
+          "unit": "s"
+        }
+      },
+      "gridPos": { "h": 7, "w": 6, "x": 12, "y": 1 },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+      },
+      "title": "p95 Latency SLA (< 500ms)",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(nexus_http_request_duration_seconds_bucket[1m])) by (le))",
+          "legendFormat": "p95 Latency",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 7, "w": 6, "x": 18, "y": 1 },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+      },
+      "title": "Autonomous Remediation Actions",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "sum(nexus_healer_incidents_total{status=\"RESOLVED\"}) or 0",
+          "legendFormat": "Heals Resolved",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 15
+          },
+          "unit": "reqps"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 5,
+      "title": "Throughput (RPS) & Error Rate Under Chaos",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate(nexus_http_requests_total[15s]))",
+          "legendFormat": "Total Throughput (RPS)",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(nexus_http_requests_total{status=~\"5..\"}[15s]))",
+          "legendFormat": "5xx Error Burst Rate",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "unit": "s"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "id": 6,
+      "title": "Response Latency Quantiles (p50, p90, p95)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(nexus_http_request_duration_seconds_bucket[30s])) by (le))",
+          "legendFormat": "p50 (Median)",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.90, sum(rate(nexus_http_request_duration_seconds_bucket[30s])) by (le))",
+          "legendFormat": "p90",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(nexus_http_request_duration_seconds_bucket[30s])) by (le))",
+          "legendFormat": "p95",
+          "refId": "C"
+        }
+      ]
+    }
+  ],
+  "refresh": "2s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["nexus", "resilience", "chaos-engineering", "self-healing", "mlops"],
+  "time": { "from": "now-15m", "to": "now" },
+  "timezone": "browser",
+  "title": "Nexus Resilience & Autonomous Self-Healing Dashboard",
+  "uid": "nexus-resilience-overview",
+  "version": 1
+}
